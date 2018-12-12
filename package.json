@@ -1,6 +1,6 @@
 {
   "name": "mvs-rawsign",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Sign Metaverse raw transactions offline",
   "main": "index.js",
   "bin": {
@@ -25,10 +25,10 @@
   },
   "homepage": "https://github.com/canguruhh/mvs-rawsign#readme",
   "dependencies": {
+    "bitcoinjs-lib": "^4.0.2",
     "commander": "^2.19.0",
     "metaversejs": "^0.3.52",
     "prompts": "^2.0.0"
   },
-  "devDependencies": {
-  }
+  "devDependencies": {}
 }
