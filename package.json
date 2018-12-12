@@ -1,0 +1,35 @@
+{
+  "name": "mvs-rawsign",
+  "version": "0.1.0",
+  "description": "Sign Metaverse raw transactions offline",
+  "main": "index.js",
+  "bin": {
+    "mvs-rawsign": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/canguruhh/mvs-rawsign.git"
+  },
+  "keywords": [
+    "metaverse",
+    "blockchain",
+    "coldwallet"
+  ],
+  "author": "Sven Mutzl",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canguruhh/mvs-rawsign/issues"
+  },
+  "homepage": "https://github.com/canguruhh/mvs-rawsign#readme",
+  "dependencies": {
+    "commander": "^2.19.0",
+    "metaversejs": "^0.3.52",
+    "prompts": "^2.0.0"
+  },
+  "devDependencies": {
+    "nyc": "^13.1.0"
+  }
+}
