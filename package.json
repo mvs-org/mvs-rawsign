@@ -19,7 +19,7 @@
     "coldwallet"
   ],
   "author": "Sven Mutzl",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/canguruhh/mvs-rawsign/issues"
   },
@@ -30,6 +30,5 @@
     "prompts": "^2.0.0"
   },
   "devDependencies": {
-    "nyc": "^13.1.0"
   }
 }
