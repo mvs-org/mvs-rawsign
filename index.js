@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 
+const bip39 = require('bip39')
+const bip32 = require('bip32')
+
+
 const program = require('commander');
 const prompts = require('prompts');
 var bitcoin = require('bitcoinjs-lib');
 const Metaverse = require('metaversejs');
+var bip66 = require('bip66')
+
 
 program
     .version('0.1.0');
@@ -15,19 +21,22 @@ program
     .option('--index [index]', 'HD index to use')
     .option('--words [words]', 'Mnemonic words to use for signature')
     .option('--privatekey [privatekey]', 'Private key to use for signature')
+    .option('--wif [wif]', 'Private key in WIF format to use for signature')
+    .option('--testnet', 'Use testnet')
     .action(signCommand);
 
 program
     .command('decode')
     .option('--tx [tx]', 'Hex encoded raw transaction')
     .option('--pretty', 'Pretty JSON format')
+    .option('--testnet', 'Use testnet')
     .action(decodeCommand);
 
 
 program.parse(process.argv);
 
 if (program.args.length === 0) {
-  program.help();
+    program.help();
 }
 
 async function selectInputs(cmd, inputs) {
@@ -102,7 +111,8 @@ async function getMnemonicWords(cmd) {
 
 async function sign(transaction, keyPair, address, inputs) {
     transaction.inputs.forEach(input => {
-        input.script = Metaverse.script.fromASM(input.script).chunks;
+        if (input.script)
+            input.script = Metaverse.script.fromASM(input.script).chunks;
     });
     inputs.forEach(i => {
         transaction.inputs[i].previous_output.address = address;
@@ -112,45 +122,68 @@ async function sign(transaction, keyPair, address, inputs) {
 }
 
 function generateInputScriptParameters(keyPair, transaction, index) {
+    const ZERO = Buffer.alloc(1, 0)
+
+    function toDER(x) {
+        let i = 0
+        while (x[i] === 0)++i
+        if (i === x.length) return ZERO
+        x = x.slice(i)
+        if (x[0] & 0x80) return Buffer.concat([ZERO, x], 1 + x.length)
+        return x
+    }
+
     let unsigned_tx = transaction.clone().clearInputScripts().encode(index);
     let script_buffer = new Buffer.alloc(4);
     script_buffer.writeUInt32LE(1, 0);
     var prepared_buffer = Buffer.concat([unsigned_tx, script_buffer]);
     var sig_hash = bitcoin.crypto.sha256(bitcoin.crypto.sha256(prepared_buffer));
-    let signature = keyPair.sign(sig_hash).toString('hex') + '01';
-    let parameters = [Buffer.from(signature, 'hex'), keyPair.publicKey];
+    let signature = keyPair.sign(sig_hash)
+    const r = toDER(signature.slice(0, 32))
+    const s = toDER(signature.slice(32, 64))
+    signature = bip66.encode(r, s)
+    let signature_string = signature.toString('hex') + '01';
+    let parameters = [Buffer.from(signature_string, 'hex'), keyPair.publicKey];
     return parameters;
 };
 
 
-function decodeCommand(cmd, options) {
+
+function decodeCommand(cmd) {
+    const network = (cmd.testnet) ? 'testnet' : 'mainnet';
     getTransaction(cmd)
-        .then(rawtx => Metaverse.transaction.decode(rawtx))
-        .then(tx => JSON.stringify(tx, null, 4))
+        .then(rawtx => Metaverse.transaction.decode(rawtx, network))
+        .then(tx => (cmd.pretty) ? JSON.stringify(tx, null, 4) : JSON.stringify(tx))
         .then(console.log);
 }
 
-async function signCommand(cmd, options) {
+async function signCommand(cmd) {
+    const network = (cmd.testnet) ? 'testnet' : 'mainnet';
     let rawtx = await getTransaction(cmd);
-    let tx = Metaverse.transaction.decode(rawtx);
-
-    console.log(cmd.privatekey)
-    if(cmd.privatekey){
-        let keyPair = bitcoin.ECPair.fromPrivateKey(Buffer.from(cmd.privatekey, 'hex'))
-        let payment = bitcoin.payments.p2pkh({
-            pubkey: keyPair.publicKey,
-            network: Metaverse.networks.mainnet
-        })
-        let inputs = await selectInputs(cmd, tx.inputs);
-        tx = await sign(tx, keyPair, payment.address, inputs);
-    } else{
+    let tx = Metaverse.transaction.decode(rawtx)
+    let keyPair = null;
+    if (cmd.wif) {
+        keyPair = bitcoin.ECPair.fromWIF(cmd.wif)
+    } else if (cmd.privatekey) {
+        keyPair = bitcoin.ECPair.fromPrivateKey(Buffer.from(cmd.privatekey, 'hex'))
+    } else if (cmd.words) {
         let words = await getMnemonicWords(cmd);
-        let wallet = await Metaverse.wallet.fromMnemonic(words);
+        const seed = bip39.mnemonicToSeed(words)
+        const root = bip32.fromSeed(seed)
+        let wallet = await Metaverse.wallet.fromMnemonic(words, network);
         let hdindex = await selectIndex(cmd, wallet);
-        let node = wallet.rootnode.derive(hdindex);
-        let inputs = await selectInputs(cmd, tx.inputs);
-        tx = await sign(tx, node.keyPair, node.getAddress(), inputs);
+        let wif = wallet.rootnode.derive(hdindex).keyPair.toWIF()
+        keyPair = bitcoin.ECPair.fromWIF(wif)
+    } else {
+        console.error('No private key info provided.')
+        process.exit(1)
     }
+    let payment = bitcoin.payments.p2pkh({
+        pubkey: keyPair.publicKey,
+        network: Metaverse.networks[network]
+    })
+    let inputs = await selectInputs(cmd, tx.inputs);
+    tx = await sign(tx, keyPair, payment.address, inputs);
 
     console.log(tx.encode().toString('hex'));
 }

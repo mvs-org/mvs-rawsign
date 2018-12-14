@@ -54,13 +54,14 @@ mvs-rawsign decode --tx 0200000001ea1a27de1f3cee7c31033b93fd493717b2ff47e756df11
 Usage: sign [options]
 
 Options:
-  --tx [tx]        Hex encoded raw transaction
-  --signall        Sign all inputs
-  --index [index]  HD index to use
-  --words [words]  Mnemonic words to use for signature
+  --tx [tx]                  Hex encoded raw transaction
+  --signall                  Sign all inputs
+  --index [index]            HD index to use
+  --words [words]            Mnemonic words to use for signature
   --privatekey [privatekey]  Private key to use for signature
-  -h, --help       output usage information
-
+  --wif [wif]                Private key in WIF format to use for signature
+  --testnet                  Use testnet
+  -h, --help                 output usage informatio
 ```
 
 You can either use your mnemonic words or a private key. If you use the --privatekey option it will not ask you for a mnemonic. Currently the private key must be 64 characters long.
