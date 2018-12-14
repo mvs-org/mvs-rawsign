@@ -38,6 +38,7 @@ Usage: decode [options]
 Options:
   --tx [tx]   Hex encoded raw transaction
   --pretty    Pretty JSON format
+  --testnet   Use testnet
   -h, --help  output usage information
 ```
 
@@ -61,7 +62,7 @@ Options:
   --privatekey [privatekey]  Private key to use for signature
   --wif [wif]                Private key in WIF format to use for signature
   --testnet                  Use testnet
-  -h, --help                 output usage informatio
+  -h, --help                 output usage information
 ```
 
 You can either use your mnemonic words or a private key. If you use the --privatekey option it will not ask you for a mnemonic. Currently the private key must be 64 characters long.
