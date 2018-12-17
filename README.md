@@ -37,10 +37,10 @@ You can omit any of the options. You will then get a cli menu to select or enter
 Usage: decode [options]
 
 Options:
-  --tx [tx]   Hex encoded raw transaction
-  --pretty    Pretty JSON format
-  --testnet   Use testnet
-  -h, --help  output usage information
+  --tx [tx]            Hex encoded raw transaction
+  --pretty             Pretty JSON format
+  --network [network]  Network to use (default mainnet).
+  -h, --help           output usage information
 ```
 
 Consider to use the --pretty option.
@@ -62,7 +62,7 @@ Options:
   --words [words]            Mnemonic words to use for signature
   --privatekey [privatekey]  Private key to use for signature
   --wif [wif]                Private key in WIF format to use for signature
-  --testnet                  Use testnet
+  --network [network]        Network to use (default mainnet).
   -h, --help                 output usage information
 ```
 
@@ -80,9 +80,10 @@ mvs-rawsign sign --tx 0200000001ea1a27de1f3cee7c31033b93fd493717b2ff47e756df1185
 Usage: generate [options]
 
 Options:
-  --count [count]  Batch generation of multiple wallets (default 1)
-  --testnet        Use testnet
-  -h, --help       output usage information
+  --count [count]      Batch generation of multiple wallets (default 1)
+  --pk [pk]            Set private key data (for testing purpose)
+  --network [network]  Network to use (default mainnet).
+  -h, --help           output usage information
 ```
 
 Generates new wallet objects. Without count parameter it will return a single new wallet. If count parameter is given it will return an array of wallets (even if count is set to 1).

@@ -23,20 +23,21 @@ program
     .option('--words [words]', 'Mnemonic words to use for signature')
     .option('--privatekey [privatekey]', 'Private key to use for signature')
     .option('--wif [wif]', 'Private key in WIF format to use for signature')
-    .option('--testnet', 'Use testnet')
+    .option('--network [network]', 'Network to use (default mainnet).')
     .action(signCommand);
 
 program
     .command('generate')
     .option('--count [count]', 'Batch generation of multiple wallets (default 1)')
-    .option('--testnet', 'Use testnet')
+    .option('--pk [pk]', 'Set private key data (for testing purpose)')
+    .option('--network [network]', 'Network to use (default mainnet).')
     .action(generateCommand);
 
 program
     .command('decode')
     .option('--tx [tx]', 'Hex encoded raw transaction')
     .option('--pretty', 'Pretty JSON format')
-    .option('--testnet', 'Use testnet')
+    .option('--network [network]', 'Network to use (default mainnet).')
     .action(decodeCommand);
 
 
@@ -165,13 +166,15 @@ function decodeCommand(cmd) {
 }
 
 function generateCommand(cmd) {
-    const network = (cmd.testnet) ? 'testnet' : 'mainnet';
+    const network = (cmd.network == 'testnet') ? 'testnet' : 'mainnet';
     const count = (cmd.count) ? cmd.count : 1
-
-
     let wallets = Array.apply(null, { length: count }).map(Number.call, Number)
+    if (cmd.pk && cmd.pk.length != 32) {
+        console.error('Illegal length of private key. Must be 32 char.')
+        process.exit(1)
+    }
     Promise.all(wallets.map(() => {
-        const keyPair = bitcoin.ECPair.makeRandom()
+        const keyPair = bitcoin.ECPair.makeRandom({ rng: (cmd.pk) ? () => Buffer.from(cmd.pk) : undefined })
         const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: Metaverse.networks[network] })
         return {
             address: address,
@@ -181,14 +184,14 @@ function generateCommand(cmd) {
     }))
         .then(wallets => {
             if (cmd.count)
-                console.log(JSON.stringify(wallets, null, PRETTY_OUTPUT_INDENT));
+                console.log(JSON.stringify(wallets, null, PRETTY_OUTPUT_INDENT))
             else
-                console.log(wallets[0])
+                console.log(JSON.stringify(wallets[0], null, PRETTY_OUTPUT_INDENT))
         })
 }
 
 async function signCommand(cmd) {
-    const network = (cmd.testnet) ? 'testnet' : 'mainnet';
+    const network = (cmd.network == 'testnet') ? 'testnet' : 'mainnet';
     let rawtx = await getTransaction(cmd);
     let tx = Metaverse.transaction.decode(rawtx)
     let keyPair = null;
