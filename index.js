@@ -10,6 +10,7 @@ var bitcoin = require('bitcoinjs-lib');
 const Metaverse = require('metaversejs');
 var bip66 = require('bip66')
 
+const PRETTY_OUTPUT_INDENT = 4
 
 program
     .version('0.1.0');
@@ -24,6 +25,12 @@ program
     .option('--wif [wif]', 'Private key in WIF format to use for signature')
     .option('--testnet', 'Use testnet')
     .action(signCommand);
+
+program
+    .command('generate')
+    .option('--count [count]', 'Batch generation of multiple wallets (default 1)')
+    .option('--testnet', 'Use testnet')
+    .action(generateCommand);
 
 program
     .command('decode')
@@ -153,8 +160,31 @@ function decodeCommand(cmd) {
     const network = (cmd.testnet) ? 'testnet' : 'mainnet';
     getTransaction(cmd)
         .then(rawtx => Metaverse.transaction.decode(rawtx, network))
-        .then(tx => (cmd.pretty) ? JSON.stringify(tx, null, 4) : JSON.stringify(tx))
+        .then(tx => (cmd.pretty) ? JSON.stringify(tx, null, PRETTY_OUTPUT_INDENT) : JSON.stringify(tx))
         .then(console.log);
+}
+
+function generateCommand(cmd) {
+    const network = (cmd.testnet) ? 'testnet' : 'mainnet';
+    const count = (cmd.count) ? cmd.count : 1
+
+
+    let wallets = Array.apply(null, { length: count }).map(Number.call, Number)
+    Promise.all(wallets.map(() => {
+        const keyPair = bitcoin.ECPair.makeRandom()
+        const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey, network: Metaverse.networks[network] })
+        return {
+            address: address,
+            private_key: keyPair.privateKey.toString('hex'),
+            wif: keyPair.toWIF()
+        }
+    }))
+        .then(wallets => {
+            if (cmd.count)
+                console.log(JSON.stringify(wallets, null, PRETTY_OUTPUT_INDENT));
+            else
+                console.log(wallets[0])
+        })
 }
 
 async function signCommand(cmd) {
